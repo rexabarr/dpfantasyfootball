@@ -126,6 +126,37 @@
     font-size:13px;
     opacity:0.8;
   }
+  .clock .timer{
+    font-family:'Oswald',sans-serif;
+    font-weight:700;
+    font-size:30px;
+    line-height:1.1;
+    margin-top:10px;
+    padding-top:9px;
+    border-top:1px solid rgba(16,36,28,0.28);
+    font-variant-numeric:tabular-nums;
+  }
+  .clock .timer.warn{ color:#7A2016; }
+  .clock .timerhint{
+    font-family:'Oswald',sans-serif;
+    font-size:11px;
+    letter-spacing:0.06em;
+    opacity:0.7;
+    margin-top:1px;
+  }
+  .clock.done{ background:var(--navy); color:var(--chalk); }
+  .clock.done .timer{ border-top-color:rgba(246,244,236,0.2); }
+  .copybtn{
+    font-family:'Oswald',sans-serif;
+    font-size:11px;
+    padding:5px 10px;
+    border-radius:6px;
+    background:transparent;
+    border:1px solid var(--turf-line);
+    color:var(--chalk-dim);
+    margin-left:auto;
+  }
+  .rosterteam h3{ display:flex; align-items:center; gap:8px; }
 
   .card{
     background:#15352A;
@@ -330,6 +361,8 @@
       <div class="label">ON THE CLOCK</div>
       <div class="team" id="clockTeam">—</div>
       <div class="meta" id="clockMeta">Loading current pick…</div>
+      <div class="timer" id="pickTimer">--:--</div>
+      <div class="timerhint" id="timerHint">auto-picks when time expires</div>
     </div>
 
     <div class="card">
@@ -418,6 +451,18 @@
       </div>
 
       <div class="fixpanel">
+        <h2 style="margin-top:0;">EXPORT FOR ESPN</h2>
+        <div class="note" style="margin-top:0;margin-bottom:10px;">
+          ESPN has no file upload for offline drafts. In ESPN go to
+          <strong>LM Tools → Input Offline Draft Results</strong>, pick a team, and type each
+          player into its roster slot. Copy the full results below to work from.
+        </div>
+        <div class="footer-row" style="margin-top:0;">
+          <button class="btn-ghost" id="copyAllBtn">Copy all 14 rosters</button>
+        </div>
+      </div>
+
+      <div class="fixpanel">
         <h2 style="margin-top:0;">TEAM NAMES</h2>
         <div class="teamnames" id="teamInputs"></div>
         <div class="footer-row">
@@ -450,6 +495,9 @@
 const STORAGE_KEY = 'draft_state_2026';
 const DEFAULT_TEAMS = ["Cole","Kevin","Jimmy","Ryan","Rex","Richard","Say","Dan","Vern","Andy","Justin","Raj","Omar","Sameer"];
 const DEFAULT_PIN = "1610";
+const TOTAL_ROUNDS = 16;
+const TOTAL_PICKS = TOTAL_ROUNDS * 14;
+const PICK_SECONDS = 15 * 60;
 
 
 // Full draft history, rounds 1-10, as reported by the league (Team 8 / Dan is missing one round — placeholder included)
@@ -636,7 +684,8 @@ const POOL = [
 {r:241,n:"Geno Smith",p:"QB",t:"NYJ"},{r:242,n:"Cedric Tillman",p:"WR",t:"NO"},{r:243,n:"Atlanta Falcons",p:"DEF",t:"ATL"},
 {r:244,n:"Cade Otton",p:"TE",t:"TB"},{r:245,n:"Xavier Legette",p:"WR",t:"CAR"},{r:246,n:"New Orleans Saints",p:"DEF",t:"NO"},
 {r:247,n:"Indianapolis Colts",p:"DEF",t:"IND"},{r:248,n:"Caleb Douglas",p:"WR",t:"MIA"},{r:249,n:"Isaiah Davis",p:"RB",t:"NYJ"},
-{r:250,n:"San Francisco 49ers",p:"DEF",t:"SF"}
+{r:250,n:"San Francisco 49ers",p:"DEF",t:"SF"},
+{r:251,n:"Brandon Aubrey",p:"K",t:"DAL"},{r:252,n:"Cameron Dicker",p:"K",t:"LAC"},{r:253,n:"Eddy Pineiro",p:"K",t:"SF"},{r:254,n:"Harrison Mevis",p:"K",t:"LAR"},{r:255,n:"Ka'imi Fairbairn",p:"K",t:"HOU"},{r:256,n:"Chase McLaughlin",p:"K",t:"TB"},{r:257,n:"Harrison Butker",p:"K",t:"KC"},{r:258,n:"Evan McPherson",p:"K",t:"CIN"},{r:259,n:"Jake Bates",p:"K",t:"DET"},{r:260,n:"Jason Myers",p:"K",t:"SEA"},{r:261,n:"Will Reichard",p:"K",t:"MIN"},{r:262,n:"Cam Little",p:"K",t:"JAX"},{r:263,n:"Tyler Bass",p:"K",t:"BUF"},{r:264,n:"Wil Lutz",p:"K",t:"DEN"},{r:265,n:"Andy Borregales",p:"K",t:"NE"},{r:266,n:"Spencer Shrader",p:"K",t:"IND"},{r:267,n:"Chris Boswell",p:"K",t:"PIT"},{r:268,n:"Tyler Loop",p:"K",t:"BAL"},{r:269,n:"Cairo Santos",p:"K",t:"CHI"},{r:270,n:"Trey Smack",p:"K",t:"GB"},{r:271,n:"Daniel Carlson",p:"K",t:"NO"},{r:272,n:"Jake Elliott",p:"K",t:"PHI"},{r:273,n:"Nick Folk",p:"K",t:"ATL"},{r:274,n:"Matt Gay",p:"K",t:"LV"},{r:275,n:"Drew Stevens",p:"K",t:"WAS"},{r:276,n:"Ryan Fitzgerald",p:"K",t:"CAR"},{r:277,n:"Joey Slye",p:"K",t:"TEN"},{r:278,n:"Riley Patterson",p:"K",t:"MIA"},{r:279,n:"Chad Ryland",p:"K",t:"ARI"},{r:280,n:"Dominic Zvada",p:"K",t:"NYG"},{r:281,n:"Andre Szmyt",p:"K",t:"CLE"},{r:282,n:"Blake Grupe",p:"K",t:"NYJ"}
 ];
 
 let state = null;
@@ -652,7 +701,8 @@ function defaultState(){
   return {
     teams: DEFAULT_TEAMS.slice(),
     picks: buildSeedPicks(DEFAULT_TEAMS),
-    commissionerPin: DEFAULT_PIN
+    commissionerPin: DEFAULT_PIN,
+    deadline: null
   };
 }
 
@@ -729,14 +779,30 @@ function render(){
   const teams = state.teams;
   const picks = state.picks;
 
-  const next = pickInfo(picks.length, teams);
-  document.getElementById('clockTeam').textContent = next.team;
-  document.getElementById('clockMeta').textContent =
-    `Round ${next.round} · Pick ${next.slotDisplay} of 14 · Overall #${next.overall}`;
+  const clockEl = document.querySelector('.clock');
+  if(picks.length >= TOTAL_PICKS){
+    clockEl.classList.add('done');
+    document.getElementById('clockTeam').textContent = 'DRAFT COMPLETE';
+    document.getElementById('clockMeta').textContent =
+      `All ${TOTAL_ROUNDS} rounds finished · ${TOTAL_PICKS} picks`;
+    document.getElementById('pickTimer').textContent = '';
+    document.getElementById('timerHint').textContent = 'Head to Rosters to copy your team';
+  }else{
+    clockEl.classList.remove('done');
+    const next = pickInfo(picks.length, teams);
+    document.getElementById('clockTeam').textContent = next.team;
+    document.getElementById('clockMeta').textContent =
+      `Round ${next.round} · Pick ${next.slotDisplay} of 14 · Overall #${next.overall}`;
+    document.getElementById('timerHint').textContent = 'auto-picks when time expires';
+  }
+  const next = picks.length >= TOTAL_PICKS
+    ? pickInfo(TOTAL_PICKS - 1, teams)
+    : pickInfo(picks.length, teams);
 
   const grid = document.getElementById('roundGrid');
   grid.innerHTML = '';
-  const roundStartIndex = picks.length - next.slot0;
+  const gridBase = Math.min(picks.length, TOTAL_PICKS - 1);
+  const roundStartIndex = gridBase - (gridBase % 14);
   for(let s = 0; s < 14; s++){
     const idx = roundStartIndex + s;
     const info = pickInfo(idx, teams);
@@ -821,11 +887,17 @@ function renderQuickList(){
   available.forEach(pl => el.appendChild(buildPlayerRow(pl, draftPlayer, 'Draft', 'draft')));
 }
 
+function newDeadline(){
+  return new Date(Date.now() + PICK_SECONDS * 1000).toISOString();
+}
+
 async function draftPlayer(pl){
   const fresh = await loadState();
   if(fresh) state = fresh;
+  if(state.picks.length >= TOTAL_PICKS){ showToast('Draft is complete'); render(); return; }
   if(draftedSet().has(pl.n)){ showToast(`${pl.n} is already drafted`); render(); return; }
   state.picks.push({player: pl.n, pos: pl.p, team: pl.t});
+  state.deadline = state.picks.length >= TOTAL_PICKS ? null : newDeadline();
   await saveState(state);
   lastSavedString = JSON.stringify(state);
   showToast(`Drafted: ${pl.n}`);
@@ -852,7 +924,9 @@ document.getElementById('addForm').addEventListener('submit', async (e) => {
   if(!player) return;
   const fresh = await loadState();
   if(fresh) state = fresh;
+  if(state.picks.length >= TOTAL_PICKS){ showToast('Draft is complete'); render(); return; }
   state.picks.push({player, pos: posInput.value, team: ''});
+  state.deadline = state.picks.length >= TOTAL_PICKS ? null : newDeadline();
   await saveState(state);
   lastSavedString = JSON.stringify(state);
   playerInput.value = '';
@@ -866,6 +940,7 @@ document.getElementById('undoBtn').addEventListener('click', async () => {
   if(fresh) state = fresh;
   if(state.picks.length <= 140){ showToast("Nothing to undo past Round 11 start"); return; }
   const removed = state.picks.pop();
+  state.deadline = newDeadline();
   await saveState(state);
   lastSavedString = JSON.stringify(state);
   showToast(`Removed: ${removed.player}`);
@@ -873,6 +948,46 @@ document.getElementById('undoBtn').addEventListener('click', async () => {
 });
 
 // ---------- ROSTERS ----------
+function copyText(text, label){
+  const done = () => showToast(label + ' copied');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+  }else{
+    fallbackCopy(text, done);
+  }
+}
+function fallbackCopy(text, done){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try{ document.execCommand('copy'); done(); }
+  catch(e){ showToast('Copy failed — select manually'); }
+  document.body.removeChild(ta);
+}
+
+function rosterText(teamName){
+  const teams = state.teams;
+  const lines = [teamName + ' — 2026 Dunham Pointe Draft', ''];
+  state.picks.forEach((p, idx) => {
+    const info = pickInfo(idx, teams);
+    if(info.team !== teamName) return;
+    lines.push(`R${info.round}.${info.slotDisplay}  ${p.player} (${p.pos}${p.team ? ' - ' + p.team : ''})`);
+  });
+  return lines.join('\n');
+}
+
+function allRostersText(){
+  const out = ['2026 DUNHAM POINTE DRAFT — FINAL RESULTS', ''];
+  state.teams.forEach(t => {
+    out.push(rosterText(t));
+    out.push('');
+  });
+  return out.join('\n');
+}
+
 function renderRosters(){
   const el = document.getElementById('rosterContainer');
   if(!state){ el.innerHTML=''; return; }
@@ -894,7 +1009,8 @@ function renderRosters(){
         <span class="rname">${p.player} · ${p.pos}${p.team ? ' ' + p.team : ''}</span>
       </div>
     `).join('') || '<div class="note">No picks yet.</div>';
-    div.innerHTML = `<h3>${t}</h3>${rows}`;
+    div.innerHTML = `<h3>${t}<button class="copybtn" type="button">Copy</button></h3>${rows}`;
+    div.querySelector('.copybtn').addEventListener('click', () => copyText(rosterText(t), t + "'s roster"));
     el.appendChild(div);
   });
 }
@@ -998,6 +1114,11 @@ function renderTeamInputs(){
     teamInputs.appendChild(inp);
   });
 }
+document.getElementById('copyAllBtn').addEventListener('click', () => {
+  if(!unlocked) return;
+  copyText(allRostersText(), 'All rosters');
+});
+
 document.getElementById('saveTeams').addEventListener('click', async () => {
   if(!unlocked) return;
   const inputs = document.querySelectorAll('#teamInputs input');
@@ -1010,6 +1131,65 @@ document.getElementById('saveTeams').addEventListener('click', async () => {
   showToast('Team names saved');
   render();
 });
+
+// ---------- PICK CLOCK ----------
+let autoPickBusy = false;
+
+function tickTimer(){
+  const el = document.getElementById('pickTimer');
+  if(!state || !el) return;
+  if(state.picks.length >= TOTAL_PICKS){ el.textContent = ''; return; }
+  if(!state.deadline){ el.textContent = '15:00'; el.classList.remove('warn'); return; }
+
+  const msLeft = new Date(state.deadline).getTime() - Date.now();
+  const secs = Math.max(0, Math.floor(msLeft / 1000));
+  const mm = String(Math.floor(secs / 60)).padStart(2,'0');
+  const ss = String(secs % 60).padStart(2,'0');
+  el.textContent = `${mm}:${ss}`;
+  el.classList.toggle('warn', secs <= 60);
+
+  if(secs === 0) maybeAutoPick();
+}
+
+async function maybeAutoPick(){
+  if(autoPickBusy) return;
+  autoPickBusy = true;
+  try{
+    // stagger browsers so they don't all write at once
+    await new Promise(r => setTimeout(r, 400 + Math.random() * 1600));
+
+    const fresh = await loadState();
+    if(fresh) state = fresh;
+    if(state.picks.length >= TOTAL_PICKS){ render(); return; }
+    // someone else already handled it
+    if(state.deadline && new Date(state.deadline).getTime() - Date.now() > 0){ render(); return; }
+
+    const countBefore = state.picks.length;
+    const best = filteredAvailable('', null)[0];
+    if(!best) return;
+
+    state.picks.push({player: best.n, pos: best.p, team: best.t, auto: true});
+    state.deadline = state.picks.length >= TOTAL_PICKS ? null : newDeadline();
+    const ok = await saveState(state);
+
+    // confirm we won the race; if not, reload whatever landed
+    const after = await loadState();
+    if(after){
+      if(after.picks.length > countBefore + 1){
+        state = after;
+        lastSavedString = JSON.stringify(state);
+      }
+    }
+    if(ok) showToast(`Time expired — auto-picked ${best.n}`);
+    render();
+  }catch(e){
+    // swallow; next tick will retry
+  }finally{
+    autoPickBusy = false;
+  }
+}
+
+setInterval(tickTimer, 1000);
 
 // ---------- POLLING ----------
 async function refreshFromStorage(){
