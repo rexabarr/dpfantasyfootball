@@ -137,6 +137,11 @@
     font-variant-numeric:tabular-nums;
   }
   .clock .timer.warn{ color:#7A2016; }
+  .clock .timer.hold{
+    font-size:24px;
+    letter-spacing:0.08em;
+    opacity:0.72;
+  }
   .clock .timerhint{
     font-family:'Oswald',sans-serif;
     font-size:11px;
@@ -332,6 +337,32 @@
 
   .fixpanel{border-top:1px solid var(--turf-line);margin-top:16px;padding-top:16px;}
   select#fixPickSelect{width:100%;margin-bottom:10px;}
+  .dlrow{display:flex;gap:8px;margin-bottom:14px;}
+  .dlrow button{flex:1;padding:10px 6px;font-size:12.5px;}
+  .backuplist{max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
+  .brow{
+    display:flex;align-items:center;gap:8px;
+    padding:8px 10px;border-radius:8px;
+    background:rgba(255,255,255,0.03);font-size:13px;
+  }
+  .brow .bmeta{flex:1;line-height:1.35;}
+  .brow .bcount{font-family:'Oswald',sans-serif;color:var(--amber);}
+  .brow .bwarn{color:#E8988F;}
+  .brow button{
+    font-family:'Oswald',sans-serif;font-size:11px;padding:6px 10px;
+    background:var(--navy);color:var(--chalk);border-radius:6px;flex:0 0 auto;
+  }
+  textarea#bulkInput{
+    width:100%;
+    background:var(--chalk);
+    color:var(--ink);
+    border:none;
+    border-radius:8px;
+    padding:10px;
+    font-size:14px;
+    font-family:'Inter',sans-serif;
+    resize:vertical;
+  }
 </style>
 </head>
 <body>
@@ -416,6 +447,16 @@
   <div class="tabpanel" id="tab-rosters">
     <div class="card">
       <h2>TEAM ROSTERS <span style="font-weight:400;text-transform:none;">(full history)</span></h2>
+      <div class="note" style="margin-top:0;margin-bottom:8px;">
+        Save or copy the complete draft — all 14 teams, every pick.
+      </div>
+      <button class="btn-primary" id="copyAllPublicBtn" style="width:100%;margin-bottom:8px;">
+        Copy Full Draft
+      </button>
+      <div class="dlrow">
+        <button class="btn-ghost" id="dlCsvBtn">Download CSV</button>
+        <button class="btn-ghost" id="dlTxtBtn">Download Text</button>
+      </div>
       <div id="rosterContainer"></div>
     </div>
   </div>
@@ -448,6 +489,47 @@
           <input type="text" id="fixSearch" placeholder="Search replacement player..." autocomplete="off">
         </div>
         <div class="playerlist short" id="fixList"></div>
+      </div>
+
+      <div class="fixpanel">
+        <h2 style="margin-top:0;">PICK CLOCK</h2>
+        <div class="note" style="margin-top:0;margin-bottom:10px;" id="clockStatus">—</div>
+        <div class="footer-row" style="margin-top:0;">
+          <button class="btn-primary" id="startClockBtn">Start clock</button>
+          <button class="btn-ghost" id="pauseClockBtn">Put on hold</button>
+        </div>
+        <div class="note">
+          While on hold nothing auto-picks — managers can still draft normally, the
+          board just won't run a timer.
+        </div>
+      </div>
+
+      <div class="fixpanel">
+        <h2 style="margin-top:0;">BACKUPS</h2>
+        <div class="note" style="margin-top:0;margin-bottom:10px;">
+          Every change to the board is snapshotted automatically. Pick a snapshot to roll
+          back to. Restoring creates a new snapshot too, so it is always reversible.
+        </div>
+        <div class="footer-row" style="margin-top:0;margin-bottom:10px;">
+          <button class="btn-ghost" id="refreshBackupsBtn">Refresh list</button>
+          <button class="btn-ghost" id="downloadBackupBtn">Download current</button>
+        </div>
+        <div class="backuplist" id="backupList"></div>
+      </div>
+
+      <div class="fixpanel">
+        <h2 style="margin-top:0;">BULK ADD PICKS</h2>
+        <div class="note" style="margin-top:0;margin-bottom:10px;">
+          Paste picks one per line, in draft order, starting from the next open slot.
+          Format: <strong>Player Name, POS</strong> (position optional if the player is
+          in the rankings). These append to the end of the board.
+        </div>
+        <textarea id="bulkInput" rows="6" placeholder="Josh Jacobs, RB&#10;Tank Dell, WR&#10;Cairo Santos, K"></textarea>
+        <div class="footer-row" style="margin-top:8px;">
+          <button class="btn-ghost" id="bulkPreviewBtn">Preview</button>
+          <button class="btn-primary" id="bulkAddBtn">Add all</button>
+        </div>
+        <div class="note" id="bulkPreview"></div>
       </div>
 
       <div class="fixpanel">
@@ -655,570 +737,4 @@ const POOL = [
 {r:154,n:"Brenton Strange",p:"TE",t:"JAX"},{r:155,n:"Adonai Mitchell",p:"WR",t:"NYJ"},{r:156,n:"Tank Bigsby",p:"RB",t:"PHI"},
 {r:157,n:"Dalton Schultz",p:"TE",t:"HOU"},{r:158,n:"Jonah Coleman",p:"RB",t:"DEN"},{r:159,n:"Omar Cooper Jr.",p:"WR",t:"NYJ"},
 {r:160,n:"Pat Bryant",p:"WR",t:"DEN"},{r:161,n:"Tyjae Spears",p:"RB",t:"TEN"},{r:162,n:"Jaylin Noel",p:"WR",t:"HOU"},
-{r:163,n:"Kayshon Boutte",p:"WR",t:"HOU"},{r:164,n:"AJ Barner",p:"TE",t:"SEA"},{r:165,n:"Baker Mayfield",p:"QB",t:"TB"},
-{r:166,n:"Dylan Sampson",p:"RB",t:"CLE"},{r:167,n:"Malachi Fields",p:"WR",t:"NYG"},{r:168,n:"Rashod Bateman",p:"WR",t:"BAL"},
-{r:169,n:"Nick Singleton",p:"RB",t:"TEN"},{r:170,n:"Troy Franklin",p:"WR",t:"DEN"},{r:171,n:"Daniel Jones",p:"QB",t:"IND"},
-{r:172,n:"Brian Robinson Jr.",p:"RB",t:"ATL"},{r:173,n:"Greg Dulcich",p:"TE",t:"MIA"},{r:174,n:"Christian Kirk",p:"WR",t:"SF"},
-{r:175,n:"Josh Jacobs",p:"RB",t:"GB"},{r:176,n:"Isaac TeSlaa",p:"WR",t:"DET"},{r:177,n:"Najee Harris",p:"RB",t:"NYG"},
-{r:178,n:"Tank Dell",p:"WR",t:"HOU"},{r:179,n:"Calvin Ridley",p:"WR",t:"TEN"},{r:180,n:"C.J. Stroud",p:"QB",t:"HOU"},
-{r:181,n:"Chimere Dike",p:"WR",t:"TEN"},{r:182,n:"Kimani Vidal",p:"RB",t:"LAC"},{r:183,n:"Kenyon Sadiq",p:"TE",t:"NYJ"},
-{r:184,n:"Cooper Kupp",p:"WR",t:"SEA"},{r:185,n:"Darnell Mooney",p:"WR",t:"NYG"},{r:186,n:"Sean Tucker",p:"RB",t:"TB"},
-{r:187,n:"Sam Darnold",p:"QB",t:"SEA"},{r:188,n:"Terrance Ferguson",p:"TE",t:"LAR"},{r:189,n:"Denver Broncos",p:"DEF",t:"DEN"},
-{r:190,n:"Ray Davis",p:"RB",t:"BUF"},{r:191,n:"Elic Ayomanor",p:"WR",t:"TEN"},{r:192,n:"Houston Texans",p:"DEF",t:"HOU"},
-{r:193,n:"Isiah Pacheco",p:"RB",t:"DET"},{r:194,n:"Oronde Gadsden II",p:"TE",t:"LAC"},{r:195,n:"Los Angeles Rams",p:"DEF",t:"LAR"},
-{r:196,n:"Braelon Allen",p:"RB",t:"NYJ"},{r:197,n:"Tyquan Thornton",p:"WR",t:"KC"},{r:198,n:"Cam Ward",p:"QB",t:"TEN"},
-{r:199,n:"Seattle Seahawks",p:"DEF",t:"SEA"},{r:200,n:"T.J. Hockenson",p:"TE",t:"MIN"},{r:201,n:"Malik Washington",p:"WR",t:"MIA"},
-{r:202,n:"Philadelphia Eagles",p:"DEF",t:"PHI"},{r:203,n:"Zachariah Branch",p:"WR",t:"ATL"},{r:204,n:"Kaytron Allen",p:"RB",t:"WAS"},
-{r:205,n:"Keon Coleman",p:"WR",t:"BUF"},{r:206,n:"Bryce Young",p:"QB",t:"CAR"},{r:207,n:"New England Patriots",p:"DEF",t:"NE"},
-{r:208,n:"Devin Singletary",p:"RB",t:"NYG"},{r:209,n:"Devaughn Vele",p:"WR",t:"NO"},{r:210,n:"Minnesota Vikings",p:"DEF",t:"MIN"},
-{r:211,n:"Jack Bech",p:"WR",t:"LV"},{r:212,n:"Jaylen Wright",p:"RB",t:"MIA"},{r:213,n:"Pittsburgh Steelers",p:"DEF",t:"PIT"},
-{r:214,n:"Pat Freiermuth",p:"TE",t:"PIT"},{r:215,n:"Kyle Williams",p:"WR",t:"NE"},{r:216,n:"Baltimore Ravens",p:"DEF",t:"BAL"},
-{r:217,n:"Darius Slayton",p:"WR",t:"NYG"},{r:218,n:"Jacksonville Jaguars",p:"DEF",t:"JAX"},{r:219,n:"Jacoby Brissett",p:"QB",t:"ARI"},
-{r:220,n:"Kendre Miller",p:"RB",t:"NO"},{r:221,n:"Tory Horton",p:"WR",t:"SEA"},{r:222,n:"Los Angeles Chargers",p:"DEF",t:"LAC"},
-{r:223,n:"Elijah Sarratt",p:"WR",t:"BAL"},{r:224,n:"Aaron Rodgers",p:"QB",t:"PIT"},{r:225,n:"Green Bay Packers",p:"DEF",t:"GB"},
-{r:226,n:"George Holani",p:"RB",t:"SEA"},{r:227,n:"Marvin Mims Jr.",p:"WR",t:"DEN"},{r:228,n:"Gunnar Helm",p:"TE",t:"TEN"},
-{r:229,n:"Kansas City Chiefs",p:"DEF",t:"KC"},{r:230,n:"James Conner",p:"RB",t:"ARI"},{r:231,n:"Mack Hollins",p:"WR",t:"NE"},
-{r:232,n:"Detroit Lions",p:"DEF",t:"DET"},{r:233,n:"Buffalo Bills",p:"DEF",t:"BUF"},{r:234,n:"Treylon Burks",p:"WR",t:"WAS"},
-{r:235,n:"Dallas Cowboys",p:"DEF",t:"DAL"},{r:236,n:"Tyrone Tracy Jr.",p:"RB",t:"NYG"},{r:237,n:"Evan Engram",p:"TE",t:"DEN"},
-{r:238,n:"Ja'Kobi Lane",p:"WR",t:"BAL"},{r:239,n:"Cleveland Browns",p:"DEF",t:"CLE"},{r:240,n:"Ollie Gordon II",p:"RB",t:"MIA"},
-{r:241,n:"Geno Smith",p:"QB",t:"NYJ"},{r:242,n:"Cedric Tillman",p:"WR",t:"NO"},{r:243,n:"Atlanta Falcons",p:"DEF",t:"ATL"},
-{r:244,n:"Cade Otton",p:"TE",t:"TB"},{r:245,n:"Xavier Legette",p:"WR",t:"CAR"},{r:246,n:"New Orleans Saints",p:"DEF",t:"NO"},
-{r:247,n:"Indianapolis Colts",p:"DEF",t:"IND"},{r:248,n:"Caleb Douglas",p:"WR",t:"MIA"},{r:249,n:"Isaiah Davis",p:"RB",t:"NYJ"},
-{r:250,n:"San Francisco 49ers",p:"DEF",t:"SF"},
-{r:251,n:"Brandon Aubrey",p:"K",t:"DAL"},{r:252,n:"Cameron Dicker",p:"K",t:"LAC"},{r:253,n:"Eddy Pineiro",p:"K",t:"SF"},{r:254,n:"Harrison Mevis",p:"K",t:"LAR"},{r:255,n:"Ka'imi Fairbairn",p:"K",t:"HOU"},{r:256,n:"Chase McLaughlin",p:"K",t:"TB"},{r:257,n:"Harrison Butker",p:"K",t:"KC"},{r:258,n:"Evan McPherson",p:"K",t:"CIN"},{r:259,n:"Jake Bates",p:"K",t:"DET"},{r:260,n:"Jason Myers",p:"K",t:"SEA"},{r:261,n:"Will Reichard",p:"K",t:"MIN"},{r:262,n:"Cam Little",p:"K",t:"JAX"},{r:263,n:"Tyler Bass",p:"K",t:"BUF"},{r:264,n:"Wil Lutz",p:"K",t:"DEN"},{r:265,n:"Andy Borregales",p:"K",t:"NE"},{r:266,n:"Spencer Shrader",p:"K",t:"IND"},{r:267,n:"Chris Boswell",p:"K",t:"PIT"},{r:268,n:"Tyler Loop",p:"K",t:"BAL"},{r:269,n:"Cairo Santos",p:"K",t:"CHI"},{r:270,n:"Trey Smack",p:"K",t:"GB"},{r:271,n:"Daniel Carlson",p:"K",t:"NO"},{r:272,n:"Jake Elliott",p:"K",t:"PHI"},{r:273,n:"Nick Folk",p:"K",t:"ATL"},{r:274,n:"Matt Gay",p:"K",t:"LV"},{r:275,n:"Drew Stevens",p:"K",t:"WAS"},{r:276,n:"Ryan Fitzgerald",p:"K",t:"CAR"},{r:277,n:"Joey Slye",p:"K",t:"TEN"},{r:278,n:"Riley Patterson",p:"K",t:"MIA"},{r:279,n:"Chad Ryland",p:"K",t:"ARI"},{r:280,n:"Dominic Zvada",p:"K",t:"NYG"},{r:281,n:"Andre Szmyt",p:"K",t:"CLE"},{r:282,n:"Blake Grupe",p:"K",t:"NYJ"}
-];
-
-let state = null;
-let lastSavedString = null;
-let unlocked = false;
-let posFilterValue = 'ALL';
-let searchValue = '';
-let quickSearchValue = '';
-let fixSearchValue = '';
-let fixSelectedIndex = null;
-
-function defaultState(){
-  return {
-    teams: DEFAULT_TEAMS.slice(),
-    picks: buildSeedPicks(DEFAULT_TEAMS),
-    commissionerPin: DEFAULT_PIN,
-    deadline: null
-  };
-}
-
-function teamForSlot(round, slot0, teams){
-  return round % 2 === 1 ? teams[slot0] : teams[13 - slot0];
-}
-function pickInfo(index, teams){
-  const round = 1 + Math.floor(index / 14);
-  const slot0 = index % 14;
-  const overall = index + 1;
-  return { round, slot0, slotDisplay: slot0 + 1, overall, team: teamForSlot(round, slot0, teams) };
-}
-
-// ---- Supabase shared storage (no login required) ----
-const SUPABASE_URL = 'https://gymkcvwhdiniszekuxfw.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_c4bwoxKj01NOspkRiK9CrQ_dvSuyyoC';
-const ROW_ID = 'dunham-pointe-2026';
-const REST = SUPABASE_URL + '/rest/v1/draft_state';
-const SB_HEADERS = {
-  'apikey': SUPABASE_KEY,
-  'Authorization': 'Bearer ' + SUPABASE_KEY,
-  'Content-Type': 'application/json'
-};
-
-async function loadState(){
-  try{
-    const res = await fetch(REST + '?id=eq.' + ROW_ID + '&select=data', { headers: SB_HEADERS });
-    if(!res.ok) return null;
-    const rows = await res.json();
-    if(rows && rows.length && rows[0].data) return rows[0].data;
-    return null;
-  }catch(e){ return null; }
-}
-
-async function saveState(s){
-  try{
-    const res = await fetch(REST, {
-      method: 'POST',
-      headers: { ...SB_HEADERS, 'Prefer': 'resolution=merge-duplicates' },
-      body: JSON.stringify({ id: ROW_ID, data: s, updated_at: new Date().toISOString() })
-    });
-    if(!res.ok){
-      showToast("Couldn't save — check connection");
-      return false;
-    }
-    return true;
-  }catch(e){ showToast("Couldn't save — check connection"); return false; }
-}
-function showToast(msg){
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(()=> t.classList.remove('show'), 1800);
-}
-function draftedSet(){ return new Set(state.picks.map(p => p.player)); }
-
-// ---------- TABS ----------
-document.querySelectorAll('.tabbar button').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tabbar button').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tabpanel').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-    if(btn.dataset.tab === 'players') renderPlayerList();
-    if(btn.dataset.tab === 'rosters') renderRosters();
-    if(btn.dataset.tab === 'draft') renderQuickList();
-    if(btn.dataset.tab === 'commish') renderFixPanel();
-  });
-});
-
-// ---------- MAIN RENDER ----------
-function render(){
-  if(!state) return;
-  const teams = state.teams;
-  const picks = state.picks;
-
-  const clockEl = document.querySelector('.clock');
-  if(picks.length >= TOTAL_PICKS){
-    clockEl.classList.add('done');
-    document.getElementById('clockTeam').textContent = 'DRAFT COMPLETE';
-    document.getElementById('clockMeta').textContent =
-      `All ${TOTAL_ROUNDS} rounds finished · ${TOTAL_PICKS} picks`;
-    document.getElementById('pickTimer').textContent = '';
-    document.getElementById('timerHint').textContent = 'Head to Rosters to copy your team';
-  }else{
-    clockEl.classList.remove('done');
-    const next = pickInfo(picks.length, teams);
-    document.getElementById('clockTeam').textContent = next.team;
-    document.getElementById('clockMeta').textContent =
-      `Round ${next.round} · Pick ${next.slotDisplay} of 14 · Overall #${next.overall}`;
-    document.getElementById('timerHint').textContent = 'auto-picks when time expires';
-  }
-  const next = picks.length >= TOTAL_PICKS
-    ? pickInfo(TOTAL_PICKS - 1, teams)
-    : pickInfo(picks.length, teams);
-
-  const grid = document.getElementById('roundGrid');
-  grid.innerHTML = '';
-  const gridBase = Math.min(picks.length, TOTAL_PICKS - 1);
-  const roundStartIndex = gridBase - (gridBase % 14);
-  for(let s = 0; s < 14; s++){
-    const idx = roundStartIndex + s;
-    const info = pickInfo(idx, teams);
-    const made = idx < picks.length ? picks[idx] : null;
-    const div = document.createElement('div');
-    div.className = 'slot' + (made ? ' filled' : '') + (idx === picks.length ? ' current' : '');
-    const label = made ? (made.player + ' · ' + made.pos + (made.team ? ' ' + made.team : '')) : (idx === picks.length ? 'on the clock' : '—');
-    div.innerHTML = `<span class="n">${s+1}</span><span class="tm">${info.team}</span><span class="pk">${label}</span>`;
-    grid.appendChild(div);
-  }
-
-  const list = document.getElementById('recentList');
-  list.innerHTML = '';
-  const recent = picks.slice(-12).reverse();
-  recent.forEach((p, i) => {
-    const idx = picks.length - 1 - i;
-    const info = pickInfo(idx, teams);
-    const li = document.createElement('li');
-    li.innerHTML = `<span><span class="tag">R${info.round}.${info.slotDisplay}</span><span class="who">${info.team}</span></span><span class="what">${p.player} · ${p.pos}${p.team ? ' ' + p.team : ''}</span>`;
-    list.appendChild(li);
-  });
-  if(recent.length === 0) list.innerHTML = '<li class="what">No picks yet.</li>';
-
-  renderQuickList();
-  if(document.getElementById('tab-players').classList.contains('active')) renderPlayerList();
-  if(document.getElementById('tab-rosters').classList.contains('active')) renderRosters();
-  if(document.getElementById('tab-commish').classList.contains('active')) renderFixPanel();
-  renderTeamInputs();
-}
-
-// ---------- PLAYER LIST (shared render fn) ----------
-function buildPlayerRow(pl, onClick, buttonLabel, buttonClass){
-  const row = document.createElement('div');
-  row.className = 'prow';
-  row.innerHTML = `
-    <span class="rk">${pl.r}</span>
-    <span class="nm">${pl.n}<span class="pt"> · ${pl.t}</span></span>
-    <span class="badge ${pl.p}">${pl.p}</span>
-    <button class="${buttonClass}" type="button">${buttonLabel}</button>
-  `;
-  row.querySelector('button').addEventListener('click', () => onClick(pl));
-  return row;
-}
-
-function filteredAvailable(query, posFilter){
-  const drafted = draftedSet();
-  let available = POOL.filter(pl => !drafted.has(pl.n));
-  if(posFilter && posFilter !== 'ALL') available = available.filter(pl => pl.p === posFilter);
-  const q = (query || '').trim().toLowerCase();
-  if(q) available = available.filter(pl => pl.n.toLowerCase().includes(q));
-  available.sort((a,b) => a.r - b.r);
-  return available;
-}
-
-function renderPosFilter(){
-  const el = document.getElementById('posFilter');
-  const positions = ['ALL','QB','RB','WR','TE','K','DEF'];
-  el.innerHTML = '';
-  positions.forEach(pos => {
-    const btn = document.createElement('button');
-    btn.textContent = pos;
-    btn.className = pos === posFilterValue ? 'active' : '';
-    btn.addEventListener('click', () => { posFilterValue = pos; renderPosFilter(); renderPlayerList(); });
-    el.appendChild(btn);
-  });
-}
-
-function renderPlayerList(){
-  const el = document.getElementById('playerList');
-  const available = filteredAvailable(searchValue, posFilterValue);
-  el.innerHTML = '';
-  if(available.length === 0){ el.innerHTML = '<div class="emptylist">No matching players left.</div>'; return; }
-  available.forEach(pl => el.appendChild(buildPlayerRow(pl, draftPlayer, 'Draft', 'draft')));
-}
-
-function renderQuickList(){
-  const el = document.getElementById('quickList');
-  if(!el) return;
-  let available = filteredAvailable(quickSearchValue, null).slice(0, 12);
-  el.innerHTML = '';
-  if(available.length === 0){ el.innerHTML = '<div class="emptylist">No matches.</div>'; return; }
-  available.forEach(pl => el.appendChild(buildPlayerRow(pl, draftPlayer, 'Draft', 'draft')));
-}
-
-function newDeadline(){
-  return new Date(Date.now() + PICK_SECONDS * 1000).toISOString();
-}
-
-async function draftPlayer(pl){
-  const fresh = await loadState();
-  if(fresh) state = fresh;
-  if(state.picks.length >= TOTAL_PICKS){ showToast('Draft is complete'); render(); return; }
-  if(draftedSet().has(pl.n)){ showToast(`${pl.n} is already drafted`); render(); return; }
-  state.picks.push({player: pl.n, pos: pl.p, team: pl.t});
-  state.deadline = state.picks.length >= TOTAL_PICKS ? null : newDeadline();
-  await saveState(state);
-  lastSavedString = JSON.stringify(state);
-  showToast(`Drafted: ${pl.n}`);
-  render();
-}
-
-async function autoDraft(){
-  const fresh = await loadState();
-  if(fresh) state = fresh;
-  const best = filteredAvailable('', null)[0];
-  if(!best){ showToast('No players left in the pool'); return; }
-  await draftPlayer(best);
-}
-document.getElementById('autoDraftBtn').addEventListener('click', autoDraft);
-document.getElementById('searchInput').addEventListener('input', (e) => { searchValue = e.target.value; renderPlayerList(); });
-document.getElementById('quickSearch').addEventListener('input', (e) => { quickSearchValue = e.target.value; renderQuickList(); });
-
-// ---------- MANUAL ADD ----------
-document.getElementById('addForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const playerInput = document.getElementById('playerInput');
-  const posInput = document.getElementById('posInput');
-  const player = playerInput.value.trim();
-  if(!player) return;
-  const fresh = await loadState();
-  if(fresh) state = fresh;
-  if(state.picks.length >= TOTAL_PICKS){ showToast('Draft is complete'); render(); return; }
-  state.picks.push({player, pos: posInput.value, team: ''});
-  state.deadline = state.picks.length >= TOTAL_PICKS ? null : newDeadline();
-  await saveState(state);
-  lastSavedString = JSON.stringify(state);
-  playerInput.value = '';
-  showToast(`Added: ${player}`);
-  render();
-});
-
-// ---------- UNDO ----------
-document.getElementById('undoBtn').addEventListener('click', async () => {
-  const fresh = await loadState();
-  if(fresh) state = fresh;
-  if(state.picks.length <= 140){ showToast("Nothing to undo past Round 11 start"); return; }
-  const removed = state.picks.pop();
-  state.deadline = newDeadline();
-  await saveState(state);
-  lastSavedString = JSON.stringify(state);
-  showToast(`Removed: ${removed.player}`);
-  render();
-});
-
-// ---------- ROSTERS ----------
-function copyText(text, label){
-  const done = () => showToast(label + ' copied');
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
-  }else{
-    fallbackCopy(text, done);
-  }
-}
-function fallbackCopy(text, done){
-  const ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.position = 'fixed';
-  ta.style.opacity = '0';
-  document.body.appendChild(ta);
-  ta.select();
-  try{ document.execCommand('copy'); done(); }
-  catch(e){ showToast('Copy failed — select manually'); }
-  document.body.removeChild(ta);
-}
-
-function rosterText(teamName){
-  const teams = state.teams;
-  const lines = [teamName + ' — 2026 Dunham Pointe Draft', ''];
-  state.picks.forEach((p, idx) => {
-    const info = pickInfo(idx, teams);
-    if(info.team !== teamName) return;
-    lines.push(`R${info.round}.${info.slotDisplay}  ${p.player} (${p.pos}${p.team ? ' - ' + p.team : ''})`);
-  });
-  return lines.join('\n');
-}
-
-function allRostersText(){
-  const out = ['2026 DUNHAM POINTE DRAFT — FINAL RESULTS', ''];
-  state.teams.forEach(t => {
-    out.push(rosterText(t));
-    out.push('');
-  });
-  return out.join('\n');
-}
-
-function renderRosters(){
-  const el = document.getElementById('rosterContainer');
-  if(!state){ el.innerHTML=''; return; }
-  const teams = state.teams;
-  const byTeam = {};
-  teams.forEach(t => byTeam[t] = []);
-  state.picks.forEach((p, idx) => {
-    const info = pickInfo(idx, teams);
-    if(!byTeam[info.team]) byTeam[info.team] = [];
-    byTeam[info.team].push({ ...p, round: info.round, slot: info.slotDisplay, idx });
-  });
-  el.innerHTML = '';
-  teams.forEach(t => {
-    const div = document.createElement('div');
-    div.className = 'rosterteam';
-    const rows = (byTeam[t] || []).map(p => `
-      <div class="rosterrow">
-        <span class="rtag">R${p.round}.${p.slot}</span>
-        <span class="rname">${p.player} · ${p.pos}${p.team ? ' ' + p.team : ''}</span>
-      </div>
-    `).join('') || '<div class="note">No picks yet.</div>';
-    div.innerHTML = `<h3>${t}<button class="copybtn" type="button">Copy</button></h3>${rows}`;
-    div.querySelector('.copybtn').addEventListener('click', () => copyText(rosterText(t), t + "'s roster"));
-    el.appendChild(div);
-  });
-}
-
-// ---------- COMMISSIONER ----------
-document.getElementById('unlockBtn').addEventListener('click', async () => {
-  const fresh = await loadState();
-  if(fresh) state = fresh;
-  const entered = document.getElementById('pinInput').value.trim();
-  const correct = state.commissionerPin || DEFAULT_PIN;
-  if(entered === correct){
-    unlocked = true;
-    document.getElementById('commishLocked').style.display = 'none';
-    document.getElementById('commishUnlocked').style.display = 'block';
-    document.getElementById('pinInput').value = '';
-    showToast('Commissioner unlocked');
-    renderFixPanel();
-    renderTeamInputs();
-  }else{
-    showToast('Incorrect PIN');
-  }
-});
-document.getElementById('lockBtn').addEventListener('click', () => {
-  unlocked = false;
-  document.getElementById('commishLocked').style.display = 'block';
-  document.getElementById('commishUnlocked').style.display = 'none';
-});
-
-function renderFixPanel(){
-  if(!unlocked || !state) return;
-  const sel = document.getElementById('fixPickSelect');
-  sel.innerHTML = '';
-  state.picks.forEach((p, idx) => {
-    const info = pickInfo(idx, state.teams);
-    const opt = document.createElement('option');
-    opt.value = idx;
-    opt.textContent = `R${info.round}.${info.slotDisplay} — ${info.team} — ${p.player}`;
-    sel.appendChild(opt);
-  });
-  if(fixSelectedIndex === null && state.picks.length) fixSelectedIndex = state.picks.length - 1;
-  sel.value = fixSelectedIndex;
-  sel.onchange = () => { fixSelectedIndex = parseInt(sel.value, 10); };
-
-  const fixList = document.getElementById('fixList');
-  fixList.innerHTML = '';
-  const available = filteredAvailable(fixSearchValue, null).slice(0, 30);
-  available.forEach(pl => {
-    fixList.appendChild(buildPlayerRow(pl, (chosen) => overridePick(parseInt(sel.value,10), chosen), 'Use', 'use'));
-  });
-}
-document.getElementById('fixSearch').addEventListener('input', (e) => { fixSearchValue = e.target.value; renderFixPanel(); });
-
-async function overridePick(index, pl){
-  if(index === null || isNaN(index)) return;
-  const fresh = await loadState();
-  if(fresh) state = fresh;
-  if(index < 0 || index >= state.picks.length) return;
-  const old = state.picks[index];
-  state.picks[index] = {player: pl.n, pos: pl.p, team: pl.t};
-  await saveState(state);
-  lastSavedString = JSON.stringify(state);
-  showToast(`Overrode ${old.player} → ${pl.n}`);
-  render();
-}
-
-document.getElementById('resetBtn').addEventListener('click', async () => {
-  if(!unlocked) return;
-  if(!confirm("Reset the tracker back to the start of Round 11? This clears everything added since.")) return;
-  const pin = state.commissionerPin;
-  state = defaultState();
-  state.commissionerPin = pin;
-  await saveState(state);
-  lastSavedString = JSON.stringify(state);
-  showToast("Reset to Round 11 start");
-  render();
-});
-
-document.getElementById('savePinBtn').addEventListener('click', async () => {
-  if(!unlocked) return;
-  const newPin = document.getElementById('newPinInput').value.trim();
-  if(!newPin){ showToast('Enter a new PIN first'); return; }
-  const fresh = await loadState();
-  if(fresh) state = fresh;
-  state.commissionerPin = newPin;
-  await saveState(state);
-  lastSavedString = JSON.stringify(state);
-  document.getElementById('newPinInput').value = '';
-  showToast('PIN updated');
-});
-
-function renderTeamInputs(){
-  const teamInputs = document.getElementById('teamInputs');
-  if(!state) return;
-  if(document.activeElement && document.activeElement.closest && document.activeElement.closest('#teamInputs')) return;
-  teamInputs.innerHTML = '';
-  state.teams.forEach((t, i) => {
-    const inp = document.createElement('input');
-    inp.type = 'text';
-    inp.value = t;
-    inp.dataset.idx = i;
-    teamInputs.appendChild(inp);
-  });
-}
-document.getElementById('copyAllBtn').addEventListener('click', () => {
-  if(!unlocked) return;
-  copyText(allRostersText(), 'All rosters');
-});
-
-document.getElementById('saveTeams').addEventListener('click', async () => {
-  if(!unlocked) return;
-  const inputs = document.querySelectorAll('#teamInputs input');
-  const newTeams = Array.from(inputs).map(i => i.value.trim() || '(unnamed)');
-  const fresh = await loadState();
-  if(fresh) state = fresh;
-  state.teams = newTeams;
-  await saveState(state);
-  lastSavedString = JSON.stringify(state);
-  showToast('Team names saved');
-  render();
-});
-
-// ---------- PICK CLOCK ----------
-let autoPickBusy = false;
-
-function tickTimer(){
-  const el = document.getElementById('pickTimer');
-  if(!state || !el) return;
-  if(state.picks.length >= TOTAL_PICKS){ el.textContent = ''; return; }
-  if(!state.deadline){ el.textContent = '15:00'; el.classList.remove('warn'); return; }
-
-  const msLeft = new Date(state.deadline).getTime() - Date.now();
-  const secs = Math.max(0, Math.floor(msLeft / 1000));
-  const mm = String(Math.floor(secs / 60)).padStart(2,'0');
-  const ss = String(secs % 60).padStart(2,'0');
-  el.textContent = `${mm}:${ss}`;
-  el.classList.toggle('warn', secs <= 60);
-
-  if(secs === 0) maybeAutoPick();
-}
-
-async function maybeAutoPick(){
-  if(autoPickBusy) return;
-  autoPickBusy = true;
-  try{
-    // stagger browsers so they don't all write at once
-    await new Promise(r => setTimeout(r, 400 + Math.random() * 1600));
-
-    const fresh = await loadState();
-    if(fresh) state = fresh;
-    if(state.picks.length >= TOTAL_PICKS){ render(); return; }
-    // someone else already handled it
-    if(state.deadline && new Date(state.deadline).getTime() - Date.now() > 0){ render(); return; }
-
-    const countBefore = state.picks.length;
-    const best = filteredAvailable('', null)[0];
-    if(!best) return;
-
-    state.picks.push({player: best.n, pos: best.p, team: best.t, auto: true});
-    state.deadline = state.picks.length >= TOTAL_PICKS ? null : newDeadline();
-    const ok = await saveState(state);
-
-    // confirm we won the race; if not, reload whatever landed
-    const after = await loadState();
-    if(after){
-      if(after.picks.length > countBefore + 1){
-        state = after;
-        lastSavedString = JSON.stringify(state);
-      }
-    }
-    if(ok) showToast(`Time expired — auto-picked ${best.n}`);
-    render();
-  }catch(e){
-    // swallow; next tick will retry
-  }finally{
-    autoPickBusy = false;
-  }
-}
-
-setInterval(tickTimer, 1000);
-
-// ---------- POLLING ----------
-async function refreshFromStorage(){
-  const fresh = await loadState();
-  if(fresh){
-    const str = JSON.stringify(fresh);
-    if(str !== lastSavedString){
-      state = fresh;
-      lastSavedString = str;
-      render();
-    }
-  }
-}
-
-async function init(){
-  let loaded = await loadState();
-  if(!loaded){
-    loaded = defaultState();
-    await saveState(loaded);
-  }
-  if(!loaded.commissionerPin) loaded.commissionerPin = DEFAULT_PIN;
-  state = loaded;
-  lastSavedString = JSON.stringify(state);
-  renderPosFilter();
-  render();
-  setInterval(refreshFromStorage, 4000);
-}
-init();
-</script>
-
-</body>
-</html>
+{r:163,n:"Kayshon Boutte",p:"WR",t:"HOU"},{r:164,n:"AJ Barner",p:"TE",t:"SEA"},{r:165,n:"Baker Ma
